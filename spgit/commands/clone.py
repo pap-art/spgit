@@ -44,11 +44,43 @@ def clone_command(args):
         os.chdir(target_dir)
 
         repo = Repository()
-        repo.init(playlist_name)
 
-        # Store remote URL
-        repo.add_remote("origin", url)
-        repo.update_config("playlist", "id", playlist_id)
+        # Manually initialize without calling init() to avoid double commit
+        repo.spgit_dir.mkdir(parents=True, exist_ok=True)
+        repo.objects_dir.mkdir(exist_ok=True)
+        repo.refs_dir.mkdir(exist_ok=True)
+        repo.heads_dir.mkdir(exist_ok=True)
+        repo.tags_dir.mkdir(exist_ok=True)
+        repo.remotes_dir.mkdir(exist_ok=True)
+        repo.logs_dir.mkdir(exist_ok=True)
+        (repo.logs_dir / "refs" / "heads").mkdir(parents=True, exist_ok=True)
+
+        # Initialize HEAD to point to main branch
+        repo.head_path.write_text("ref: refs/heads/main")
+
+        # Initialize config with all settings
+        config = {
+            "core": {
+                "repositoryformatversion": 0,
+                "filemode": True,
+                "bare": False
+            },
+            "playlist": {
+                "name": playlist_name,
+                "id": playlist_id
+            },
+            "remote": {
+                "origin": {"url": url}
+            },
+            "branch": {
+                "main": {
+                    "remote": "origin",
+                    "merge": "refs/heads/main"
+                }
+            }
+        }
+        repo._write_config(config)
+        repo._write_index({})
 
         # Fetch tracks
         print(info(f"Fetching tracks..."))
@@ -72,9 +104,6 @@ def clone_command(args):
         # Update main branch
         repo._update_ref("refs/heads/main", commit_hash)
         repo._update_reflog("refs/heads/main", None, commit_hash, f"clone: from {url}")
-
-        # Set upstream
-        repo.update_config("branch", "main", {"remote": "origin", "merge": "refs/heads/main"})
 
         # Update index to match commit
         repo.update_index({"tree": tree, "tracks": {track.uri: track.to_dict() for track in tracks}})

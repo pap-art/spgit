@@ -35,10 +35,39 @@ def add_command(args):
             sp = get_spotify_client(repo)
             tracks = sp.get_playlist_tracks(playlist_id)
 
-            print(info(f"Adding {len(tracks)} tracks to staging area"))
+            # Compare with current staging area to show what changed
+            old_uris = set(staged_tracks.keys())
+            new_uris = {track.uri for track in tracks}
+
+            added_uris = new_uris - old_uris
+            removed_uris = old_uris - new_uris
 
             # Update staged tracks
-            staged_tracks = {track.uri: track.to_dict() for track in tracks}
+            new_staged_tracks = {track.uri: track.to_dict() for track in tracks}
+
+            # Show what changed
+            if added_uris or removed_uris:
+                if added_uris:
+                    print(info(f"Added {len(added_uris)} track(s)"))
+                    for uri in list(added_uris)[:5]:  # Show first 5
+                        track_dict = new_staged_tracks[uri]
+                        from ..utils.colors import added as added_color
+                        print(f"  {added_color('+')} {track_dict['name']} - {track_dict['artist']}")
+                    if len(added_uris) > 5:
+                        print(f"  ... and {len(added_uris) - 5} more")
+
+                if removed_uris:
+                    print(info(f"Removed {len(removed_uris)} track(s)"))
+                    for uri in list(removed_uris)[:5]:  # Show first 5
+                        track_dict = staged_tracks[uri]
+                        from ..utils.colors import removed as removed_color
+                        print(f"  {removed_color('-')} {track_dict['name']} - {track_dict['artist']}")
+                    if len(removed_uris) > 5:
+                        print(f"  ... and {len(removed_uris) - 5} more")
+            else:
+                print(info(f"No changes ({len(tracks)} tracks)"))
+
+            staged_tracks = new_staged_tracks
 
         elif hasattr(args, 'files') and args.files:
             # Add specific track URIs

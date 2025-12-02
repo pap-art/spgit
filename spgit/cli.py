@@ -9,11 +9,13 @@ from . import __version__
 # Import all commands
 from .commands.init import init_command
 from .commands.clone import clone_command
+from .commands.fork import fork_command
 from .commands.config import config_command
 from .commands.add import add_command
 from .commands.commit import commit_command
 from .commands.status import status_command
 from .commands.diff import diff_command
+from .commands.compare import compare_command
 from .commands.log import log_command
 from .commands.branch import branch_command
 from .commands.checkout import checkout_command
@@ -54,6 +56,12 @@ def create_parser():
     clone_parser.add_argument('url', help='Spotify playlist URL')
     clone_parser.add_argument('directory', nargs='?', help='Directory name')
 
+    # fork
+    fork_parser = subparsers.add_parser('fork', help='Fork a playlist (clone and create your own copy on Spotify)')
+    fork_parser.add_argument('url', help='Source Spotify playlist URL')
+    fork_parser.add_argument('--name', help='Name for your new playlist')
+    fork_parser.add_argument('--directory', help='Local directory name')
+
     # config
     config_parser = subparsers.add_parser('config', help='Configure spgit')
     config_parser.add_argument('--global', dest='global_config', action='store_true', help='Use global config')
@@ -77,6 +85,10 @@ def create_parser():
     # diff
     diff_parser = subparsers.add_parser('diff', help='Show changes')
     diff_parser.add_argument('--staged', action='store_true', help='Show staged changes')
+
+    # compare
+    compare_parser = subparsers.add_parser('compare', help='Compare with upstream or another remote')
+    compare_parser.add_argument('--remote', default='upstream', help='Remote to compare with (default: upstream)')
 
     # log
     log_parser = subparsers.add_parser('log', help='Show commit logs')
@@ -176,11 +188,13 @@ def main():
     commands = {
         'init': init_command,
         'clone': clone_command,
+        'fork': fork_command,
         'config': config_command,
         'add': add_command,
         'commit': commit_command,
         'status': status_command,
         'diff': diff_command,
+        'compare': compare_command,
         'log': log_command,
         'branch': branch_command,
         'checkout': checkout_command,
